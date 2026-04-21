@@ -6,7 +6,6 @@ import com.lms.dtos.RegisterRequest;
 import com.lms.entities.User;
 import com.lms.repositories.UserRepository;
 import com.lms.security.JwtService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,23 +17,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+    }
+
     public AuthenticationResponse register(RegisterRequest request) {
-        var user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
-                .build();
+        User user = new User(
+            request.getEmail(),
+            passwordEncoder.encode(request.getPassword()),
+            request.getFirstName(),
+            request.getLastName(),
+            request.getRole()
+        );
         userRepository.save(user);
-        
         return createAuthResponse(user);
     }
 
@@ -45,14 +49,13 @@ public class AuthService {
                         request.getPassword()
                 )
         );
-        var user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow();
-        
         return createAuthResponse(user);
     }
 
     private AuthenticationResponse createAuthResponse(User user) {
-        var userDetails = new org.springframework.security.core.userdetails.User(
+        org.springframework.security.core.userdetails.User userDetails = new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
@@ -64,9 +67,7 @@ public class AuthService {
         extraClaims.put("firstName", user.getFirstName());
         extraClaims.put("lastName", user.getLastName());
 
-        var jwtToken = jwtService.generateToken(extraClaims, userDetails);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
+        String jwtToken = jwtService.generateToken(extraClaims, userDetails);
+        return new AuthenticationResponse(jwtToken);
     }
 }

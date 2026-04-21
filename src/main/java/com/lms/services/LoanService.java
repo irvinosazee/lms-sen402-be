@@ -6,7 +6,6 @@ import com.lms.exceptions.ResourceNotFoundException;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
 import com.lms.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +15,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class LoanService {
 
     private final LoanRepository loanRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+
+    public LoanService(LoanRepository loanRepository, BookRepository bookRepository, UserRepository userRepository) {
+        this.loanRepository = loanRepository;
+        this.bookRepository = bookRepository;
+        this.userRepository = userRepository;
+    }
 
     @Transactional
     public LoanResponseDTO borrowBook(Long bookId) {
@@ -36,16 +40,14 @@ public class LoanService {
             throw new RuntimeException("No copies available for borrowing");
         }
 
-        // Create loan
-        Loan loan = Loan.builder()
-                .book(book)
-                .user(user)
-                .borrowDate(LocalDateTime.now())
-                .dueDate(LocalDateTime.now().plusDays(14)) // Default 2 weeks
-                .status(LoanStatus.BORROWED)
-                .build();
+        Loan loan = new Loan(
+            book,
+            user,
+            LocalDateTime.now(),
+            LocalDateTime.now().plusDays(14),
+            LoanStatus.BORROWED
+        );
 
-        // Update book availability
         book.setAvailableCopies(book.getAvailableCopies() - 1);
         bookRepository.save(book);
         
@@ -89,16 +91,16 @@ public class LoanService {
     }
 
     private LoanResponseDTO mapToResponse(Loan loan) {
-        return LoanResponseDTO.builder()
-                .id(loan.getId())
-                .bookId(loan.getBook().getId())
-                .bookTitle(loan.getBook().getTitle())
-                .userId(loan.getUser().getId())
-                .userEmail(loan.getUser().getEmail())
-                .borrowDate(loan.getBorrowDate())
-                .dueDate(loan.getDueDate())
-                .returnDate(loan.getReturnDate())
-                .status(loan.getStatus())
-                .build();
+        LoanResponseDTO response = new LoanResponseDTO();
+        response.setId(loan.getId());
+        response.setBookId(loan.getBook().getId());
+        response.setBookTitle(loan.getBook().getTitle());
+        response.setUserId(loan.getUser().getId());
+        response.setUserEmail(loan.getUser().getEmail());
+        response.setBorrowDate(loan.getBorrowDate());
+        response.setDueDate(loan.getDueDate());
+        response.setReturnDate(loan.getReturnDate());
+        response.setStatus(loan.getStatus());
+        return response;
     }
 }

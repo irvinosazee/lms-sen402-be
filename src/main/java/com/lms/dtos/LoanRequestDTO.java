@@ -1,16 +1,11 @@
 package com.lms.dtos;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class LoanRequestDTO {
     @NotNull(message = "Book ID is required")
     private Long bookId;
+    public LoanRequestDTO() {}
+    public Long getBookId() { return bookId; }
+    public void setBookId(Long bookId) { this.bookId = bookId; }
 }

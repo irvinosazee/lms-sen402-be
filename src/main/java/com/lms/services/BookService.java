@@ -9,7 +9,6 @@ import com.lms.repositories.BookRepository;
 import com.lms.repositories.AuthorRepository;
 import com.lms.repositories.CategoryRepository;
 import com.lms.specifications.BookSpecification;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,12 +19,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class BookService {
 
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
+
+    public BookService(BookRepository bookRepository, AuthorRepository authorRepository, CategoryRepository categoryRepository) {
+        this.bookRepository = bookRepository;
+        this.authorRepository = authorRepository;
+        this.categoryRepository = categoryRepository;
+    }
 
     public BookResponseDTO createBook(BookRequestDTO request) {
         Author author = authorRepository.findById(request.getAuthorId())
@@ -33,14 +37,14 @@ public class BookService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        Book book = Book.builder()
-                .title(request.getTitle())
-                .isbn(request.getIsbn())
-                .totalCopies(request.getTotalCopies())
-                .availableCopies(request.getTotalCopies())
-                .author(author)
-                .category(category)
-                .build();
+        Book book = new Book(
+            request.getTitle(),
+            request.getIsbn(),
+            request.getTotalCopies(),
+            request.getTotalCopies(),
+            author,
+            category
+        );
 
         Book savedBook = bookRepository.save(book);
         return mapToResponse(savedBook);
@@ -67,7 +71,6 @@ public class BookService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        // Update copies logic
         int oldTotal = book.getTotalCopies();
         int newTotal = request.getTotalCopies();
         int diff = newTotal - oldTotal;
@@ -90,22 +93,27 @@ public class BookService {
     }
 
     private BookResponseDTO mapToResponse(Book book) {
-        return BookResponseDTO.builder()
-                .id(book.getId())
-                .title(book.getTitle())
-                .isbn(book.getIsbn())
-                .totalCopies(book.getTotalCopies())
-                .availableCopies(book.getAvailableCopies())
-                .author(AuthorResponseDTO.builder()
-                        .id(book.getAuthor().getId())
-                        .name(book.getAuthor().getName())
-                        .bio(book.getAuthor().getBio())
-                        .build())
-                .category(CategoryResponseDTO.builder()
-                        .id(book.getCategory().getId())
-                        .name(book.getCategory().getName())
-                        .description(book.getCategory().getDescription())
-                        .build())
-                .build();
+        BookResponseDTO response = new BookResponseDTO();
+        response.setId(book.getId());
+        response.setTitle(book.getTitle());
+        response.setIsbn(book.getIsbn());
+        response.setTotalCopies(book.getTotalCopies());
+        response.setAvailableCopies(book.getAvailableCopies());
+        
+        AuthorResponseDTO authorDTO = new AuthorResponseDTO(
+            book.getAuthor().getId(),
+            book.getAuthor().getName(),
+            book.getAuthor().getBio()
+        );
+        response.setAuthor(authorDTO);
+
+        CategoryResponseDTO categoryDTO = new CategoryResponseDTO(
+            book.getCategory().getId(),
+            book.getCategory().getName(),
+            book.getCategory().getDescription()
+        );
+        response.setCategory(categoryDTO);
+        
+        return response;
     }
 }

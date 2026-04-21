@@ -4,7 +4,6 @@ import com.lms.dtos.LoanRequestDTO;
 import com.lms.dtos.LoanResponseDTO;
 import com.lms.services.LoanService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +12,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/loans")
-@RequiredArgsConstructor
 public class LoanController {
 
     private final LoanService loanService;
+    public LoanController(LoanService loanService) {
+        this.loanService = loanService;
+    }
 
     @PostMapping("/borrow")
     @PreAuthorize("hasRole('STUDENT')")

@@ -1,17 +1,11 @@
 package com.lms.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "loans")
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Loan {
 
     @Id
@@ -41,4 +35,30 @@ public class Loan {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public Loan() {}
+
+    public Loan(Book book, User user, LocalDateTime borrowDate, LocalDateTime dueDate, LoanStatus status) {
+        this.book = book;
+        this.user = user;
+        this.borrowDate = borrowDate;
+        this.dueDate = dueDate;
+        this.status = status;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Book getBook() { return book; }
+    public void setBook(Book book) { this.book = book; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public LocalDateTime getBorrowDate() { return borrowDate; }
+    public void setBorrowDate(LocalDateTime borrowDate) { this.borrowDate = borrowDate; }
+    public LocalDateTime getDueDate() { return dueDate; }
+    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+    public LocalDateTime getReturnDate() { return returnDate; }
+    public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; }
+    public LoanStatus getStatus() { return status; }
+    public void setStatus(LoanStatus status) { this.status = status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }
