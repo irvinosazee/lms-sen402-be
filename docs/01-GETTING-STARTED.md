@@ -18,7 +18,7 @@
    spring:
      datasource:
        username: postgres
-       password: ${DB_PASSWORD:***REMOVED***}
+       password: ${DB_PASSWORD:your_default_password}
    ```
 
 3. **Install Dependencies and Run:**
