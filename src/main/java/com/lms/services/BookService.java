@@ -8,7 +8,11 @@ import com.lms.exceptions.ResourceNotFoundException;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.AuthorRepository;
 import com.lms.repositories.CategoryRepository;
+import com.lms.specifications.BookSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,10 +46,9 @@ public class BookService {
         return mapToResponse(savedBook);
     }
 
-    public List<BookResponseDTO> getAllBooks() {
-        return bookRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<BookResponseDTO> getAllBooks(String query, Pageable pageable) {
+        Specification<Book> spec = BookSpecification.search(query);
+        return bookRepository.findAll(spec, pageable).map(this::mapToResponse);
     }
 
     public BookResponseDTO getBookById(Long id) {

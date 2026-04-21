@@ -5,12 +5,12 @@ import com.lms.dtos.BookResponseDTO;
 import com.lms.services.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -26,8 +26,10 @@ public class BookController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
-        return ResponseEntity.ok(bookService.getAllBooks());
+    public ResponseEntity<Page<BookResponseDTO>> getAllBooks(
+            @RequestParam(required = false) String query,
+            Pageable pageable) {
+        return ResponseEntity.ok(bookService.getAllBooks(query, pageable));
     }
 
     @GetMapping("/{id}")
