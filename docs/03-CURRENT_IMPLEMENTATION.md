@@ -1,31 +1,25 @@
-# Current Backend Implementation Status
+# Current Implementation - Backend
 
-This document tracks the implemented features and the current state of the backend.
+## 1. Authentication & Security
+- **JWT Auth:** Fully implemented using `HS256` signing.
+- **Filter Chain:** `JwtAuthenticationFilter` handles token extraction and validation.
+- **Resilience:** Filter now ignores invalid/expired tokens for public endpoints (login/register) to prevent crashes.
+- **RBAC:** Enforced at the Controller level using `@PreAuthorize`.
 
----
+## 2. Core Entities
+- **Users:** Supporting `ADMIN`, `LIBRARIAN`, `STUDENT`.
+- **Books:** Tracks `availableCopies` vs `totalCopies`.
+- **Loans:** Tracks `borrowDate`, `dueDate`, and `status`.
 
-## 1. Project Foundation
-- **Framework:** Spring Boot 3.3.5 (Java 17+)
-- **Database:** PostgreSQL (with H2 capability)
-- **Tooling:** Maven (Lombok removed for better environment compatibility)
+## 3. Advanced Features
+- **Statistics Engine:** High-performance JPA queries for the role-based dashboard.
+- **User Directory:** Restricted endpoint for managing the member list.
+- **Search:** Dynamic book search by title/ISBN.
 
-## 2. Core Modules & Entities
+## 4. Error Handling
+- **Standardized Response:** All exceptions return a consistent JSON schema via `GlobalExceptionHandler`.
+- **Auth Errors:** Bad credentials correctly return `401 Unauthorized`.
 
-### Authentication & Authorization
-- **Implementation:** Standard Spring Security with manual dependency injection.
-- **Security Mechanism:** JWT implementation via `JwtService`.
-- **Entities:** `User` (with roles `ADMIN`, `LIBRARIAN`, `STUDENT`).
-- **Standard Pattern:** All entities and DTOs use **explicit constructors, getters, and setters**.
-
-### Library Catalog
-- **Logic:** `BookService` handles CRUD operations.
-- **Filtering:** Implemented `BookSpecification` for multi-field searching (Title, Author, Category, ISBN).
-- **Pagination:** All catalog endpoints return `Page<BookResponseDTO>` for efficient UI rendering.
-
-### Loan System
-- **Transactional Integrity:** `LoanService` ensures that book availability is updated atomically with loan creation.
-- **Endpoints:** `/api/v1/loans/borrow`, `/api/v1/loans/return`, `/api/v1/loans/my`.
-
-## 3. Infrastructure
-- **Global Exception Handling:** Centralized JSON error responses.
-- **Data Seeding:** `DataInitializer` seeds an Admin and a Student account at startup.
+## 5. Persistence
+- **PostgreSQL:** Production-grade schema with Hibernate auto-update enabled for development.
+- **Data Initializer:** Seed logic for default users and sample books.
