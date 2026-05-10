@@ -8,6 +8,7 @@ import com.lms.exceptions.ResourceNotFoundException;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
 import com.lms.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class LoanService {
     public LoanService(LoanRepository loanRepository,
                        BookRepository bookRepository,
                        UserRepository userRepository,
-                       @org.springframework.beans.factory.annotation.Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
+                       @Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
         if (finePerDay < 0) {
             throw new IllegalStateException("app.loan.fine-per-day-naira must be >= 0");
         }
@@ -150,7 +151,7 @@ public class LoanService {
         response.setStatus(loan.getStatus());
 
         long days = LoanFines.daysOverdue(loan);
-        long accrued = days * finePerDay;
+        long accrued = LoanFines.fineAccrued(loan, finePerDay);
         response.setDaysOverdue(days);
         response.setFineAccrued(accrued);
         response.setFineOutstanding(loan.isFinePaid() ? 0L : accrued);

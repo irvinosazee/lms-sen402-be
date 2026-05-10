@@ -8,6 +8,7 @@ import com.lms.entities.User;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
 import com.lms.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class StatsService {
     public StatsService(BookRepository bookRepository,
                         LoanRepository loanRepository,
                         UserRepository userRepository,
-                        @org.springframework.beans.factory.annotation.Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
+                        @Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
         this.bookRepository = bookRepository;
         this.loanRepository = loanRepository;
         this.userRepository = userRepository;
