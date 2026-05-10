@@ -1,37 +1,120 @@
-# Getting Started with LMS Backend
+# Backend — Getting Started
 
-## Prerequisites
-- Java 17+
-- PostgreSQL
-- Maven
+This is a short, backend-only setup guide. For the **full project setup** (Java/Postgres/Bun installation, troubleshooting, etc.), read [`../../../docs/DEVELOPMENT_GUIDE.md`](../../../docs/DEVELOPMENT_GUIDE.md) first.
 
-## Local Setup
-1. **Create the Database:**
-   Ensure PostgreSQL is running and create a database named `lms-project`.
-   ```sql
-   CREATE DATABASE "lms-project";
-   ```
+---
 
-2. **Configure Database Credentials:**
-   The application uses environment variables for credentials. You can set them in your terminal or replace the defaults in `src/main/resources/application.yml`.
-   ```yaml
-   spring:
-     datasource:
-       username: postgres
-       password: ${DB_PASSWORD:your_default_password}
-   ```
+## What you need
 
-3. **Install Dependencies and Run:**
-   ```bash
-   ./mvnw spring-boot:run
-   ```
+| Tool | Version | Why |
+|---|---|---|
+| Java | 17+ | The language. Spring Boot 3.x requires it. |
+| PostgreSQL | 14+ | Our database. |
+| Maven Wrapper | bundled (`./mvnw`) | Downloads Maven for you. No global install needed. |
 
-## Initial Data
-The application automatically seeds:
-- **Admin:** `admin@lms.com` (password: `admin123`)
-- **Student:** `student@lms.com` (password: `student123`)
-- A sample book ("Harry Potter") for initial testing.
+---
 
-## Useful Commands
-- **Run tests:** `./mvnw test`
-- **Clean and package:** `./mvnw clean package`
+## Setup steps
+
+### 1. Create the database
+```bash
+createdb lms-project
+```
+
+The backend will create all tables automatically on first run via Hibernate (`ddl-auto: update`).
+
+### 2. Copy the env template and fill in your real values
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+- `DB_PASSWORD` — your Postgres password.
+- `JWT_SECRET` — generate fresh:
+  ```bash
+  openssl rand -base64 32
+  ```
+
+The other values have sensible defaults.
+
+### 3. Load `.env` into your shell
+```bash
+set -a; source .env; set +a
+```
+
+Do this **once per terminal** before running the backend. Spring Boot does **not** read `.env` automatically — it reads from the OS environment.
+
+### 4. Run
+```bash
+./mvnw spring-boot:run
+```
+
+The first run downloads ~200MB of Maven dependencies (1-2 minutes). Subsequent runs start in ~5 seconds.
+
+Watch for:
+```
+Started LmsBackendApplication in 4.2s
+```
+
+API is live at `http://localhost:8081`.
+
+### 5. Smoke test
+```bash
+curl http://localhost:8081/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@lms.com","password":"admin123"}'
+```
+
+Expected: `{"token":"eyJ..."}`. If you get this, you're good.
+
+---
+
+## Seeded accounts
+
+| Email | Password | Role |
+|---|---|---|
+| `admin@lms.com` | `admin123` | `ADMIN` |
+| `librarian@lms.com` | `lib123` | `LIBRARIAN` |
+| `student@lms.com` | `student123` | `STUDENT` |
+| `jane@lms.com` | `jane123` | `STUDENT` |
+
+The data initializer (`com.lms.config.DataInitializer`) seeds these plus 5 authors, 5 categories, 8 books, and a mix of loan records (active / returned / overdue) so the dashboards and fine system have data to work with on first boot.
+
+---
+
+## Useful commands
+
+```bash
+./mvnw spring-boot:run         # Start the backend
+./mvnw test                    # Run all tests (should be 17 green)
+./mvnw clean package           # Build a deployable .jar
+./mvnw -DskipTests compile     # Just compile (faster than full test run)
+```
+
+The Maven Wrapper caches downloaded dependencies under `~/.m2/repository`. Wipe that folder if dependencies get corrupted.
+
+---
+
+## Database operations
+
+```bash
+psql -d lms-project            # connect interactively
+\dt                            # list tables
+\d users                       # describe a specific table
+\q                             # quit
+```
+
+Wipe everything to start fresh (you'll lose all data):
+```bash
+dropdb lms-project && createdb lms-project
+```
+
+---
+
+## Next steps
+
+- **[02-SPRING_BOOT_CRASH_COURSE.md](./02-SPRING_BOOT_CRASH_COURSE.md)** — required if you're new to Spring Boot.
+- **[03-CURRENT_IMPLEMENTATION.md](./03-CURRENT_IMPLEMENTATION.md)** — what's built so far.
+- **[04-OVERDUE_FINES.md](./04-OVERDUE_FINES.md)** — deep dive on the fine system.
+- **[../../../docs/API_REFERENCE.md](../../../docs/API_REFERENCE.md)** — every endpoint.
+- **[../../../docs/DEVELOPMENT_GUIDE.md#troubleshooting](../../../docs/DEVELOPMENT_GUIDE.md#troubleshooting)** — troubleshooting guide if anything went wrong.
