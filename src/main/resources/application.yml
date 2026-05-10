@@ -24,6 +24,8 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:604800000}
+  loan:
+    fine-per-day-naira: ${LOAN_FINE_PER_DAY:100}
 
 logging:
   level:

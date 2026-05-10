@@ -27,4 +27,9 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     @Query("SELECT l FROM Loan l WHERE l.user = :user ORDER BY l.borrowDate DESC")
     List<Loan> findRecentActivityByUser(User user, Pageable pageable);
+
+    List<Loan> findByUserAndFinePaidFalse(User user);
+
+    @Query("SELECT l FROM Loan l WHERE l.finePaid = false AND l.dueDate < :now")
+    List<Loan> findUnpaidPotentiallyOverdue(LocalDateTime now);
 }

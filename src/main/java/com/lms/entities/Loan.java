@@ -32,6 +32,11 @@ public class Loan {
     @Column(nullable = false)
     private LoanStatus status;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean finePaid = false;
+
+    private LocalDateTime finePaidAt;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -60,5 +65,9 @@ public class Loan {
     public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; }
     public LoanStatus getStatus() { return status; }
     public void setStatus(LoanStatus status) { this.status = status; }
+    public boolean isFinePaid() { return finePaid; }
+    public void setFinePaid(boolean finePaid) { this.finePaid = finePaid; }
+    public LocalDateTime getFinePaidAt() { return finePaidAt; }
+    public void setFinePaidAt(LocalDateTime finePaidAt) { this.finePaidAt = finePaidAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
