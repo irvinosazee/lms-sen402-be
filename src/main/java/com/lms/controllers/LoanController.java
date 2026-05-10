@@ -30,6 +30,12 @@ public class LoanController {
         return ResponseEntity.ok(loanService.returnBook(loanId));
     }
 
+    @PostMapping("/{loanId}/settle-fine")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ResponseEntity<LoanResponseDTO> settleFine(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.settleFine(loanId));
+    }
+
     @GetMapping("/my")
     public ResponseEntity<List<LoanResponseDTO>> getMyLoans() {
         return ResponseEntity.ok(loanService.getMyLoans());
