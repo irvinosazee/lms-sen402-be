@@ -25,10 +25,16 @@ public class StatsService {
     private final LoanRepository loanRepository;
     private final UserRepository userRepository;
 
-    public StatsService(BookRepository bookRepository, LoanRepository loanRepository, UserRepository userRepository) {
+    private final long finePerDay;
+
+    public StatsService(BookRepository bookRepository,
+                        LoanRepository loanRepository,
+                        UserRepository userRepository,
+                        @org.springframework.beans.factory.annotation.Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
         this.bookRepository = bookRepository;
         this.loanRepository = loanRepository;
         this.userRepository = userRepository;
+        this.finePerDay = finePerDay;
     }
 
     public StatsResponseDTO getDashboardStats() {
@@ -44,7 +50,11 @@ public class StatsService {
             metrics.put("totalStudents", userRepository.count());
             metrics.put("activeLoans", loanRepository.countByStatus(LoanStatus.BORROWED));
             metrics.put("overdueCount", loanRepository.countOverdue(LocalDateTime.now()));
-            
+            long allOutstanding = loanRepository.findUnpaidPotentiallyOverdue(LocalDateTime.now()).stream()
+                    .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay))
+                    .sum();
+            metrics.put("outstandingFinesTotal", allOutstanding);
+
             activities = loanRepository.findRecentActivity(PageRequest.of(0, 5)).stream()
                     .map(l -> new DashboardActivityDTO(
                             l.getStatus().toString(),
@@ -56,7 +66,11 @@ public class StatsService {
             metrics.put("myActiveLoans", loanRepository.countByUserAndStatus(user, LoanStatus.BORROWED));
             metrics.put("overdueCount", loanRepository.countOverdueByUser(user, LocalDateTime.now()));
             metrics.put("totalBorrowed", (long) loanRepository.findByUser(user).size());
-            
+            long myOutstanding = loanRepository.findByUserAndFinePaidFalse(user).stream()
+                    .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay))
+                    .sum();
+            metrics.put("myOutstandingFines", myOutstanding);
+
             activities = loanRepository.findRecentActivityByUser(user, PageRequest.of(0, 5)).stream()
                     .map(l -> new DashboardActivityDTO(
                             l.getStatus().toString(),

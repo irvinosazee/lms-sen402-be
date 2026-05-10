@@ -4,12 +4,12 @@ import com.lms.dtos.LoanResponseDTO;
 import com.lms.entities.*;
 import com.lms.exceptions.BadRequestException;
 import com.lms.exceptions.ResourceNotFoundException;
+import org.springframework.test.util.ReflectionTestUtils;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
 import com.lms.repositories.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,7 +37,6 @@ class LoanServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @InjectMocks
     private LoanService loanService;
 
     private User user;
@@ -47,7 +46,8 @@ class LoanServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        
+        loanService = new LoanService(loanRepository, bookRepository, userRepository, 100L);
+
         user = new User("student@lms.com", "password", "John", "Doe", Role.STUDENT);
         user.setId(1L);
 
@@ -73,6 +73,7 @@ class LoanServiceTest {
     void borrowBook_Success() {
         when(userRepository.findByEmail("student@lms.com")).thenReturn(Optional.of(user));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(loanRepository.findByUserAndFinePaidFalse(user)).thenReturn(java.util.Collections.emptyList());
         when(loanRepository.save(any(Loan.class))).thenReturn(loan);
 
         LoanResponseDTO response = loanService.borrowBook(1L);
@@ -88,6 +89,7 @@ class LoanServiceTest {
         book.setAvailableCopies(0);
         when(userRepository.findByEmail("student@lms.com")).thenReturn(Optional.of(user));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(loanRepository.findByUserAndFinePaidFalse(user)).thenReturn(java.util.Collections.emptyList());
 
         BadRequestException exception = assertThrows(BadRequestException.class, () -> loanService.borrowBook(1L));
         assertEquals("No copies available for borrowing", exception.getMessage());
@@ -114,5 +116,38 @@ class LoanServiceTest {
 
         BadRequestException exception = assertThrows(BadRequestException.class, () -> loanService.returnBook(1L));
         assertEquals("Book already returned", exception.getMessage());
+    }
+
+    @Test
+    void settleFine_Success() {
+        loan.setStatus(LoanStatus.RETURNED);
+        loan.setBorrowDate(LocalDateTime.now().minusDays(20));
+        loan.setDueDate(LocalDateTime.now().minusDays(6));
+        loan.setReturnDate(LocalDateTime.now().minusDays(2));
+        when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
+        when(loanRepository.save(any(Loan.class))).thenReturn(loan);
+
+        LoanResponseDTO response = loanService.settleFine(1L);
+
+        assertTrue(response.isFinePaid());
+        assertEquals(0L, response.getFineOutstanding());
+        assertNotNull(loan.getFinePaidAt());
+    }
+
+    @Test
+    void borrowBook_BlockedByOutstandingFine() {
+        Loan oldOverdue = new Loan(book, user,
+                LocalDateTime.now().minusDays(20),
+                LocalDateTime.now().minusDays(6),
+                LoanStatus.RETURNED);
+        oldOverdue.setReturnDate(LocalDateTime.now().minusDays(2));
+        oldOverdue.setFinePaid(false);
+
+        when(userRepository.findByEmail("student@lms.com")).thenReturn(Optional.of(user));
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(loanRepository.findByUserAndFinePaidFalse(user)).thenReturn(java.util.List.of(oldOverdue));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> loanService.borrowBook(1L));
+        assertEquals("Settle outstanding fines before borrowing again", ex.getMessage());
     }
 }

@@ -23,10 +23,19 @@ public class LoanService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
 
-    public LoanService(LoanRepository loanRepository, BookRepository bookRepository, UserRepository userRepository) {
+    private final long finePerDay;
+
+    public LoanService(LoanRepository loanRepository,
+                       BookRepository bookRepository,
+                       UserRepository userRepository,
+                       @org.springframework.beans.factory.annotation.Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
+        if (finePerDay < 0) {
+            throw new IllegalStateException("app.loan.fine-per-day-naira must be >= 0");
+        }
         this.loanRepository = loanRepository;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.finePerDay = finePerDay;
     }
 
     @Transactional
@@ -37,6 +46,13 @@ public class LoanService {
 
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        var unpaid = loanRepository.findByUserAndFinePaidFalse(user);
+        boolean hasOutstandingFine = unpaid.stream()
+                .anyMatch(l -> LoanFines.fineAccrued(l, finePerDay) > 0);
+        if (hasOutstandingFine) {
+            throw new BadRequestException("Settle outstanding fines before borrowing again");
+        }
 
         if (book.getAvailableCopies() <= 0) {
             throw new BadRequestException("No copies available for borrowing");
@@ -101,6 +117,26 @@ public class LoanService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public LoanResponseDTO settleFine(Long loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
+
+        if (loan.getStatus() == LoanStatus.BORROWED) {
+            throw new BadRequestException("Fine can only be settled after the book is returned");
+        }
+        if (loan.isFinePaid()) {
+            throw new BadRequestException("Fine already settled");
+        }
+        if (LoanFines.fineAccrued(loan, finePerDay) == 0) {
+            throw new BadRequestException("No outstanding fine on this loan");
+        }
+
+        loan.setFinePaid(true);
+        loan.setFinePaidAt(LocalDateTime.now());
+        return mapToResponse(loanRepository.save(loan));
+    }
+
     private LoanResponseDTO mapToResponse(Loan loan) {
         LoanResponseDTO response = new LoanResponseDTO();
         response.setId(loan.getId());
@@ -112,6 +148,13 @@ public class LoanService {
         response.setDueDate(loan.getDueDate());
         response.setReturnDate(loan.getReturnDate());
         response.setStatus(loan.getStatus());
+
+        long days = LoanFines.daysOverdue(loan);
+        long accrued = days * finePerDay;
+        response.setDaysOverdue(days);
+        response.setFineAccrued(accrued);
+        response.setFineOutstanding(loan.isFinePaid() ? 0L : accrued);
+        response.setFinePaid(loan.isFinePaid());
         return response;
     }
 }

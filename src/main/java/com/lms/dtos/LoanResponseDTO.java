@@ -33,4 +33,18 @@ public class LoanResponseDTO {
     public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; }
     public LoanStatus getStatus() { return status; }
     public void setStatus(LoanStatus status) { this.status = status; }
+
+    private long daysOverdue;
+    private long fineAccrued;
+    private long fineOutstanding;
+    private boolean finePaid;
+
+    public long getDaysOverdue() { return daysOverdue; }
+    public void setDaysOverdue(long daysOverdue) { this.daysOverdue = daysOverdue; }
+    public long getFineAccrued() { return fineAccrued; }
+    public void setFineAccrued(long fineAccrued) { this.fineAccrued = fineAccrued; }
+    public long getFineOutstanding() { return fineOutstanding; }
+    public void setFineOutstanding(long fineOutstanding) { this.fineOutstanding = fineOutstanding; }
+    public boolean isFinePaid() { return finePaid; }
+    public void setFinePaid(boolean finePaid) { this.finePaid = finePaid; }
 }
