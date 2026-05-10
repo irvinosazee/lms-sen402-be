@@ -1,11 +1,11 @@
 spring:
   application:
     name: lms-backend
-  
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/lms-project
-    username: postgres
-    password: ${DB_PASSWORD:***REMOVED***}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lms-project}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -18,7 +18,12 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:604800000}
 
 logging:
   level:

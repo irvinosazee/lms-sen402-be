@@ -4,6 +4,17 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Secrets — never commit ###
+.env
+.env.*
+!.env.example
+
+### Logs ###
+*.log
+
+### macOS ###
+.DS_Store
+
 ### STS ###
 .apt_generated
 .classpath

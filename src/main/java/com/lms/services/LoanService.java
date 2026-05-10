@@ -2,6 +2,8 @@ package com.lms.services;
 
 import com.lms.dtos.LoanResponseDTO;
 import com.lms.entities.*;
+import com.lms.exceptions.BadRequestException;
+import com.lms.exceptions.ForbiddenException;
 import com.lms.exceptions.ResourceNotFoundException;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
@@ -37,7 +39,7 @@ public class LoanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 
         if (book.getAvailableCopies() <= 0) {
-            throw new RuntimeException("No copies available for borrowing");
+            throw new BadRequestException("No copies available for borrowing");
         }
 
         Loan loan = new Loan(
@@ -60,8 +62,17 @@ public class LoanService {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
 
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        boolean isStaff = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_LIBRARIAN"));
+        if (!isStaff && !loan.getUser().getEmail().equals(email)) {
+            throw new ForbiddenException("You can only return your own loans");
+        }
+
         if (loan.getStatus() == LoanStatus.RETURNED) {
-            throw new RuntimeException("Book already returned");
+            throw new BadRequestException("Book already returned");
         }
 
         loan.setReturnDate(LocalDateTime.now());

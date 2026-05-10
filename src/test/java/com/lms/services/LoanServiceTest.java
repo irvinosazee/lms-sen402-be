@@ -2,6 +2,7 @@ package com.lms.services;
 
 import com.lms.dtos.LoanResponseDTO;
 import com.lms.entities.*;
+import com.lms.exceptions.BadRequestException;
 import com.lms.exceptions.ResourceNotFoundException;
 import com.lms.repositories.BookRepository;
 import com.lms.repositories.LoanRepository;
@@ -88,7 +89,7 @@ class LoanServiceTest {
         when(userRepository.findByEmail("student@lms.com")).thenReturn(Optional.of(user));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> loanService.borrowBook(1L));
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> loanService.borrowBook(1L));
         assertEquals("No copies available for borrowing", exception.getMessage());
     }
 
@@ -111,7 +112,7 @@ class LoanServiceTest {
         loan.setStatus(LoanStatus.RETURNED);
         when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> loanService.returnBook(1L));
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> loanService.returnBook(1L));
         assertEquals("Book already returned", exception.getMessage());
     }
 }

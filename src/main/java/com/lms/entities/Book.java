@@ -37,6 +37,10 @@ public class Book {
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
     private List<Loan> loans;
 
+    @Version
+    @Column(columnDefinition = "BIGINT DEFAULT 0")
+    private Long version;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -71,6 +75,7 @@ public class Book {
     public void setCategory(Category category) { this.category = category; }
     public List<Loan> getLoans() { return loans; }
     public void setLoans(List<Loan> loans) { this.loans = loans; }
+    public Long getVersion() { return version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
