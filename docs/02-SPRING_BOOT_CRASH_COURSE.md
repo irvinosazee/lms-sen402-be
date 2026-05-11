@@ -492,11 +492,18 @@ app:
     fine-per-day-naira: ${LOAN_FINE_PER_DAY:100}
 ```
 
-- `${VAR}` reads from the OS environment. No default → required.
-- `${VAR:default}` reads from env, falls back to `default` if unset.
+- `${VAR}` reads from a property source. No default → required.
+- `${VAR:default}` falls back to `default` if unset.
 - **No real secrets in YAML.** Anything sensitive comes through env.
 
-Inject these into your beans with `@Value`:
+Spring's property resolution searches multiple sources in order of precedence:
+1. Real OS environment variables
+2. The `apps/backend/.env` file (via the `me.paulschwarz:spring-dotenv` dependency declared in `pom.xml` — it registers an additional `PropertySource` that loads `.env` from the working directory at startup)
+3. Defaults in YAML
+
+You don't write any Java code to make `.env` work — it just happens because the library is on the classpath. In dev, you edit `apps/backend/.env`; in prod, the platform injects real env vars and `.env` is ignored. Same code, both environments.
+
+Inject the resolved values into your beans with `@Value`:
 
 ```java
 public LoanService(LoanRepository ..., @Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {

@@ -37,17 +37,22 @@ Edit `.env`:
 
 The other values have sensible defaults.
 
-### 3. Load `.env` into your shell
-```bash
-set -a; source .env; set +a
-```
+### 3. Run
 
-Do this **once per terminal** before running the backend. Spring Boot does **not** read `.env` automatically — it reads from the OS environment.
-
-### 4. Run
 ```bash
 ./mvnw spring-boot:run
 ```
+
+That's it — no shell setup needed. The backend uses [`spring-dotenv`](https://github.com/paulschwarz/spring-dotenv) (declared in `pom.xml`) which reads `apps/backend/.env` automatically at application startup and exposes the keys to Spring's `${VAR}` placeholder resolution.
+
+**Important:** spring-dotenv looks for `.env` in the **working directory** — i.e., wherever you invoke `./mvnw`. Always run Maven commands from inside `apps/backend/`, not from the repo root.
+
+**Precedence** (highest wins):
+1. Real OS environment variables (`export DB_PASSWORD=...` in your shell, or production-platform injections)
+2. Values in `apps/backend/.env`
+3. Defaults in `application.yml` (the `:default` part of `${VAR:default}`)
+
+This matters in production: deployment platforms inject env vars directly. No `.env` file is shipped. The same code works.
 
 The first run downloads ~200MB of Maven dependencies (1-2 minutes). Subsequent runs start in ~5 seconds.
 

@@ -65,6 +65,16 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Auto-loads apps/backend/.env into Spring's PropertySource at startup.
+		     The library reads .env from the working directory before the
+		     ApplicationContext is built, so ${ENV_VAR} placeholders in
+		     application.yml resolve without any manual shell loading. Real OS
+		     environment variables still take precedence (important for prod). -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

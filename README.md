@@ -33,8 +33,8 @@ cp .env.example .env
 # Edit .env: set DB_PASSWORD and a fresh JWT_SECRET (openssl rand -base64 32)
 
 # Every time
-set -a; source .env; set +a
 ./mvnw spring-boot:run         # API on http://localhost:8081
+# (apps/backend/.env is auto-loaded by spring-dotenv — no shell setup needed)
 ```
 
 See [`docs/01-GETTING-STARTED.md`](./docs/01-GETTING-STARTED.md) for details and [`../../docs/DEVELOPMENT_GUIDE.md#troubleshooting`](../../docs/DEVELOPMENT_GUIDE.md#troubleshooting) for when things break.
