@@ -35,6 +35,11 @@ Snapshot of what's running in the backend as of 2026-05-11. For deeper dives on 
 - Login: verify BCrypt password, issue JWT with embedded role + name + id claims.
 - Register: hash password, persist user, immediately issue JWT.
 
+### `CategoryService` and `AuthorService`
+- Full CRUD on both. List endpoints populate `bookCount` via `bookRepository.countByCategory/Author`.
+- Category create/update enforces unique name (returns 400 on duplicate).
+- Delete on either is **blocked with 409** when books still reference the entity. The error message includes the count and the entity name so the librarian knows what to reassign.
+
 ### `StatsService`
 - Role-aware aggregates:
   - **ADMIN/LIBRARIAN:** `totalBooks`, `totalStudents`, `activeLoans`, `overdueCount`, `outstandingFinesTotal`.
@@ -47,7 +52,8 @@ Snapshot of what's running in the backend as of 2026-05-11. For deeper dives on 
 ## 4. Controllers (REST API)
 - `AuthController` — `/auth/login`, `/auth/register`.
 - `BookController` — full CRUD with pagination and search.
-- `AuthorController`, `CategoryController` — CRUD.
+- `AuthorController` — full CRUD (`GET`, `POST`, `PUT`, `DELETE`). Delete returns 409 when books reference the author.
+- `CategoryController` — full CRUD with name-uniqueness checks (400) and book-reference delete guard (409).
 - `LoanController` — `/loans/borrow`, `/loans/{id}/return`, `/loans/{id}/settle-fine`, `/loans/my`, `/loans`.
 - `StatsController` — `/stats` (role-aware response).
 - `UserController` — `/users` (staff-only directory).
