@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** Category CRUD. Reads are open; writes are staff-only. */
 @RestController
 @RequestMapping("/api/v1/categories")
 public class CategoryController {
@@ -38,6 +39,7 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.update(id, request));
     }
 
+    /** Returns 409 if books still reference the category (service-layer guard). */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

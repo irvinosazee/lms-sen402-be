@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
+/** A single borrow transaction. Fine fields are stored; fine math is computed elsewhere (LoanFines). */
 @Entity
 @Table(name = "loans")
 public class Loan {
@@ -26,12 +27,14 @@ public class Loan {
     @Column(nullable = false)
     private LocalDateTime dueDate;
 
+    /** Null until returned. Once set, fine accrual freezes (LoanFines uses returnDate as end). */
     private LocalDateTime returnDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LoanStatus status;
 
+    /** True after a librarian settles the fine. {@code columnDefinition} default backfills existing rows. */
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean finePaid = false;
 

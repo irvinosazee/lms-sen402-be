@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/** Book CRUD. Reads are open to any authenticated user; writes are staff-only. */
 @RestController
 @RequestMapping("/api/v1/books")
 public class BookController {
@@ -27,6 +28,7 @@ public class BookController {
         return new ResponseEntity<>(bookService.createBook(request), HttpStatus.CREATED);
     }
 
+    /** Paginated list. {@code query} matches title/author/category/isbn. Spring reads page/size/sort from query params. */
     @GetMapping
     public ResponseEntity<Page<BookResponseDTO>> getAllBooks(
             @RequestParam(required = false) String query,

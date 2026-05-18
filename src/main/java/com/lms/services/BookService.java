@@ -15,9 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+/** CRUD for books. Search/pagination is delegated to BookSpecification. */
 @Service
 public class BookService {
 
@@ -25,31 +23,27 @@ public class BookService {
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
 
-    public BookService(BookRepository bookRepository, AuthorRepository authorRepository, CategoryRepository categoryRepository) {
+    public BookService(BookRepository bookRepository, AuthorRepository authorRepository,
+                       CategoryRepository categoryRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.categoryRepository = categoryRepository;
     }
 
+    /** New books start with available == total (everything on the shelf). */
     public BookResponseDTO createBook(BookRequestDTO request) {
         Author author = authorRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Author not found"));
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        Book book = new Book(
-            request.getTitle(),
-            request.getIsbn(),
-            request.getTotalCopies(),
-            request.getTotalCopies(),
-            author,
-            category
-        );
-
-        Book savedBook = bookRepository.save(book);
-        return mapToResponse(savedBook);
+        Book book = new Book(request.getTitle(), request.getIsbn(),
+                             request.getTotalCopies(), request.getTotalCopies(),
+                             author, category);
+        return mapToResponse(bookRepository.save(book));
     }
 
+    /** Paginated + searchable list. {@code query} matches title/author/category/isbn. */
     public Page<BookResponseDTO> getAllBooks(String query, Pageable pageable) {
         Specification<Book> spec = BookSpecification.search(query);
         return bookRepository.findAll(spec, pageable).map(this::mapToResponse);
@@ -61,23 +55,21 @@ public class BookService {
         return mapToResponse(book);
     }
 
+    /** Keeps checked-out books checked out when totalCopies changes (delta applied to available). */
     @Transactional
     public BookResponseDTO updateBook(Long id, BookRequestDTO request) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
-
         Author author = authorRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Author not found"));
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        int oldTotal = book.getTotalCopies();
-        int newTotal = request.getTotalCopies();
-        int diff = newTotal - oldTotal;
-        
+        // E.g., total goes 10 → 12 (bought 2 more) ⇒ available also goes up by 2.
+        int diff = request.getTotalCopies() - book.getTotalCopies();
         book.setTitle(request.getTitle());
         book.setIsbn(request.getIsbn());
-        book.setTotalCopies(newTotal);
+        book.setTotalCopies(request.getTotalCopies());
         book.setAvailableCopies(book.getAvailableCopies() + diff);
         book.setAuthor(author);
         book.setCategory(category);
@@ -92,6 +84,7 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
+    /** Entity → DTO. Nested author/category use the 3-arg constructor so bookCount stays null. */
     private BookResponseDTO mapToResponse(Book book) {
         BookResponseDTO response = new BookResponseDTO();
         response.setId(book.getId());
@@ -99,21 +92,12 @@ public class BookService {
         response.setIsbn(book.getIsbn());
         response.setTotalCopies(book.getTotalCopies());
         response.setAvailableCopies(book.getAvailableCopies());
-        
-        AuthorResponseDTO authorDTO = new AuthorResponseDTO(
-            book.getAuthor().getId(),
-            book.getAuthor().getName(),
-            book.getAuthor().getBio()
-        );
-        response.setAuthor(authorDTO);
 
-        CategoryResponseDTO categoryDTO = new CategoryResponseDTO(
-            book.getCategory().getId(),
-            book.getCategory().getName(),
-            book.getCategory().getDescription()
-        );
-        response.setCategory(categoryDTO);
-        
+        // bookCount left null on purpose — @JsonInclude(NON_NULL) strips it from the wire.
+        response.setAuthor(new AuthorResponseDTO(
+            book.getAuthor().getId(), book.getAuthor().getName(), book.getAuthor().getBio()));
+        response.setCategory(new CategoryResponseDTO(
+            book.getCategory().getId(), book.getCategory().getName(), book.getCategory().getDescription()));
         return response;
     }
 }

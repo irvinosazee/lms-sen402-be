@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/** CRUD for authors. Same delete-guard pattern as CategoryService; no name uniqueness. */
 @Service
 public class AuthorService {
 
@@ -25,15 +26,12 @@ public class AuthorService {
     }
 
     public List<AuthorResponseDTO> getAll() {
-        return authorRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return authorRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     @Transactional
     public AuthorResponseDTO create(AuthorRequestDTO request) {
-        Author saved = authorRepository.save(new Author(request.getName().trim(), request.getBio()));
-        return toResponse(saved);
+        return toResponse(authorRepository.save(new Author(request.getName().trim(), request.getBio())));
     }
 
     @Transactional
@@ -45,6 +43,7 @@ public class AuthorService {
         return toResponse(authorRepository.save(author));
     }
 
+    /** Refuses to delete if any books credit the author. */
     @Transactional
     public void delete(Long id) {
         Author author = authorRepository.findById(id)
@@ -61,7 +60,7 @@ public class AuthorService {
     }
 
     private AuthorResponseDTO toResponse(Author author) {
-        long count = bookRepository.countByAuthor(author);
-        return new AuthorResponseDTO(author.getId(), author.getName(), author.getBio(), count);
+        return new AuthorResponseDTO(author.getId(), author.getName(), author.getBio(),
+                bookRepository.countByAuthor(author));
     }
 }

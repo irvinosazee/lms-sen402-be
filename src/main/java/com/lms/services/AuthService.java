@@ -16,24 +16,28 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/** Handles login and registration. The only service that mints JWTs directly. */
 @Service
 public class AuthService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       JwtService jwtService, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
     }
 
+    /** Hash password, save, immediately issue a JWT so the user is signed in. */
     public AuthenticationResponse register(RegisterRequest request) {
         User user = new User(
             request.getEmail(),
-            passwordEncoder.encode(request.getPassword()),
+            passwordEncoder.encode(request.getPassword()),    // never store plaintext
             request.getFirstName(),
             request.getLastName(),
             request.getRole()
@@ -42,24 +46,24 @@ public class AuthService {
         return createAuthResponse(user);
     }
 
+    /** Verify credentials via Spring's auth manager, then return a JWT. */
     public AuthenticationResponse login(LoginRequest request) {
+        // Throws BadCredentialsException → GlobalExceptionHandler → 401.
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow();
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         return createAuthResponse(user);
     }
 
+    /** Build the JWT with id/role/firstName/lastName claims so the frontend can render without an extra call. */
     private AuthenticationResponse createAuthResponse(User user) {
-        org.springframework.security.core.userdetails.User userDetails = new org.springframework.security.core.userdetails.User(
+        org.springframework.security.core.userdetails.User userDetails =
+            new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-        );
+            );
 
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("id", user.getId());
@@ -67,7 +71,6 @@ public class AuthService {
         extraClaims.put("firstName", user.getFirstName());
         extraClaims.put("lastName", user.getLastName());
 
-        String jwtToken = jwtService.generateToken(extraClaims, userDetails);
-        return new AuthenticationResponse(jwtToken);
+        return new AuthenticationResponse(jwtService.generateToken(extraClaims, userDetails));
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/** Runs on every request: pulls the Bearer token, validates it, populates SecurityContext. */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -33,36 +34,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
 
+        // No token? Continue as anonymous — public routes (e.g. /auth/login) still need to work.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            jwt = authHeader.substring(7);
-            userEmail = jwtService.extractUsername(jwt);
-            
+            String jwt = authHeader.substring(7);          // strip "Bearer "
+            String userEmail = jwtService.extractUsername(jwt);
+
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                            userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // From here on the request is "logged in" — @PreAuthorize and services can see the user.
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
-            // If token is invalid (expired, wrong signature, etc.), we just ignore it
-            // and let the security filter chain handle the unauthorized access if needed.
-            // This prevents login/public routes from crashing due to old/bad tokens in headers.
+            // Swallow bad tokens (expired, wrong signature, etc.) so public routes don't crash.
+            // The request continues anonymous and gets a 401 only if the route requires auth.
         }
 
         filterChain.doFilter(request, response);

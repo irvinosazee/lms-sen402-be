@@ -5,17 +5,19 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
+/** A system user: admin, librarian, or student. Email is the login identifier. */
 @Entity
 @Table(name = "users")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)   // auto-increment via the DB
     private Long id;
 
     @Column(unique = true, nullable = false)
     private String email;
 
+    /** BCrypt hash, never plaintext. */
     @Column(nullable = false)
     private String password;
 
@@ -25,6 +27,7 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
+    /** Stored as the enum's name (e.g. "ADMIN") rather than its ordinal — survives reordering. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -36,7 +39,7 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    public User() {}
+    public User() {}   // JPA requires a no-args constructor
 
     public User(String email, String password, String firstName, String lastName, Role role) {
         this.email = email;

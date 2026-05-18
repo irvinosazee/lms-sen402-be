@@ -1,6 +1,6 @@
 # Backend — Getting Started
 
-This is a short, backend-only setup guide. For the **full project setup** (Java/Postgres/Bun installation, troubleshooting, etc.), read [`../../../docs/DEVELOPMENT_GUIDE.md`](../../../docs/DEVELOPMENT_GUIDE.md) first.
+This is a short, backend-only setup guide. For the **full project setup** (Java/Postgres/Bun installation, troubleshooting, etc.), read [`DEVELOPMENT_GUIDE.md`](../../../docs/DEVELOPMENT_GUIDE.md) first.
 
 ---
 

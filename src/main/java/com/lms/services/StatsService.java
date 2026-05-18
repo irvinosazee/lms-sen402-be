@@ -19,17 +19,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/** Dashboard payloads. Staff see system-wide totals; students see their own. */
 @Service
 public class StatsService {
 
     private final BookRepository bookRepository;
     private final LoanRepository loanRepository;
     private final UserRepository userRepository;
-
     private final long finePerDay;
 
-    public StatsService(BookRepository bookRepository,
-                        LoanRepository loanRepository,
+    public StatsService(BookRepository bookRepository, LoanRepository loanRepository,
                         UserRepository userRepository,
                         @Value("${app.loan.fine-per-day-naira:100}") long finePerDay) {
         this.bookRepository = bookRepository;
@@ -38,6 +37,7 @@ public class StatsService {
         this.finePerDay = finePerDay;
     }
 
+    /** Branches on role: staff get totals + system feed, students get personal stats + own feed. */
     public StatsResponseDTO getDashboardStats() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
@@ -51,34 +51,29 @@ public class StatsService {
             metrics.put("totalStudents", userRepository.count());
             metrics.put("activeLoans", loanRepository.countByStatus(LoanStatus.BORROWED));
             metrics.put("overdueCount", loanRepository.countOverdue(LocalDateTime.now()));
-            long allOutstanding = loanRepository.findUnpaidPotentiallyOverdue(LocalDateTime.now()).stream()
-                    .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay))
-                    .sum();
-            metrics.put("outstandingFinesTotal", allOutstanding);
+            // Sum unpaid fines across all overdue loans.
+            metrics.put("outstandingFinesTotal",
+                    loanRepository.findUnpaidPotentiallyOverdue(LocalDateTime.now()).stream()
+                            .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay)).sum());
 
+            // System-wide last 5 loans for the activity feed.
             activities = loanRepository.findRecentActivity(PageRequest.of(0, 5)).stream()
-                    .map(l -> new DashboardActivityDTO(
-                            l.getStatus().toString(),
-                            l.getBook().getTitle(),
-                            l.getUser().getEmail(),
-                            l.getBorrowDate()
-                    )).collect(Collectors.toList());
+                    .map(l -> new DashboardActivityDTO(l.getStatus().toString(),
+                            l.getBook().getTitle(), l.getUser().getEmail(), l.getBorrowDate()))
+                    .collect(Collectors.toList());
         } else {
             metrics.put("myActiveLoans", loanRepository.countByUserAndStatus(user, LoanStatus.BORROWED));
             metrics.put("overdueCount", loanRepository.countOverdueByUser(user, LocalDateTime.now()));
             metrics.put("totalBorrowed", (long) loanRepository.findByUser(user).size());
-            long myOutstanding = loanRepository.findByUserAndFinePaidFalse(user).stream()
-                    .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay))
-                    .sum();
-            metrics.put("myOutstandingFines", myOutstanding);
+            metrics.put("myOutstandingFines",
+                    loanRepository.findByUserAndFinePaidFalse(user).stream()
+                            .mapToLong(l -> LoanFines.fineAccrued(l, finePerDay)).sum());
 
+            // Personal feed — "You" instead of echoing their own email back at them.
             activities = loanRepository.findRecentActivityByUser(user, PageRequest.of(0, 5)).stream()
-                    .map(l -> new DashboardActivityDTO(
-                            l.getStatus().toString(),
-                            l.getBook().getTitle(),
-                            "You",
-                            l.getBorrowDate()
-                    )).collect(Collectors.toList());
+                    .map(l -> new DashboardActivityDTO(l.getStatus().toString(),
+                            l.getBook().getTitle(), "You", l.getBorrowDate()))
+                    .collect(Collectors.toList());
         }
 
         return new StatsResponseDTO(metrics, activities);

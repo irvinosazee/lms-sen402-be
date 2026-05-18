@@ -2,25 +2,25 @@ package com.lms.dtos;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+/** Category on the wire. Same bookCount convention as AuthorResponseDTO. */
 public class CategoryResponseDTO {
     private Long id;
     private String name;
     private String description;
 
-    // Number of books currently assigned to this category. Populated by list
-    // endpoints. Left null (and omitted from JSON) when the DTO is embedded
-    // inside a BookResponseDTO, to avoid an N+1 query per book.
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long bookCount;
 
     public CategoryResponseDTO() {}
 
+    /** 3-arg ctor — bookCount stays null (used when embedded inside BookResponseDTO). */
     public CategoryResponseDTO(Long id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;
     }
 
+    /** 4-arg ctor — populates bookCount for list endpoints. */
     public CategoryResponseDTO(Long id, String name, String description, Long bookCount) {
         this.id = id;
         this.name = name;

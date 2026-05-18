@@ -6,6 +6,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/** A book in the catalog. Tracks total vs. available copies and uses optimistic locking for concurrent borrows. */
 @Entity
 @Table(name = "books")
 public class Book {
@@ -23,6 +24,7 @@ public class Book {
     @Column(nullable = false)
     private Integer totalCopies;
 
+    /** Copies on the shelf right now. Decremented on borrow, incremented on return. */
     @Column(nullable = false)
     private Integer availableCopies;
 
@@ -37,6 +39,7 @@ public class Book {
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
     private List<Loan> loans;
 
+    /** Optimistic-lock counter: Hibernate bumps it on every UPDATE, throwing if two writes race. */
     @Version
     @Column(columnDefinition = "BIGINT DEFAULT 0")
     private Long version;

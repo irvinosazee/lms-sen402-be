@@ -3,6 +3,7 @@ package com.lms.dtos;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/** Create/update category payload. Name uniqueness is enforced in the service. */
 public class CategoryRequestDTO {
 
     @NotBlank(message = "Category name is required")

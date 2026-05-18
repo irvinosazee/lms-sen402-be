@@ -3,6 +3,7 @@ package com.lms.entities;
 import jakarta.persistence.*;
 import java.util.List;
 
+/** Book category (e.g., "Fantasy"). Name is unique. */
 @Entity
 @Table(name = "categories")
 public class Category {

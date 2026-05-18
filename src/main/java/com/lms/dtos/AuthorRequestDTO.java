@@ -3,6 +3,7 @@ package com.lms.dtos;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/** Create/update author payload. */
 public class AuthorRequestDTO {
 
     @NotBlank(message = "Author name is required")

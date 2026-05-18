@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Dashboard metrics + activity feed. Response shape varies by caller's role (see StatsService). */
 @RestController
 @RequestMapping("/api/v1/stats")
 public class StatsController {

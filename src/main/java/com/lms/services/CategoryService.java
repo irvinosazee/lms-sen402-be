@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/** CRUD for categories. Unique names; deletion blocked while books reference them. */
 @Service
 public class CategoryService {
 
@@ -27,19 +28,17 @@ public class CategoryService {
     }
 
     public List<CategoryResponseDTO> getAll() {
-        return categoryRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return categoryRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     @Transactional
     public CategoryResponseDTO create(CategoryRequestDTO request) {
         String name = request.getName().trim();
+        // Pre-check uniqueness to surface a clean 400 instead of a raw DB constraint error.
         if (categoryRepository.findByName(name).isPresent()) {
             throw new BadRequestException("A category named \"" + name + "\" already exists");
         }
-        Category saved = categoryRepository.save(new Category(name, request.getDescription()));
-        return toResponse(saved);
+        return toResponse(categoryRepository.save(new Category(name, request.getDescription())));
     }
 
     @Transactional
@@ -48,8 +47,9 @@ public class CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         String name = request.getName().trim();
-        Optional<Category> nameClash = categoryRepository.findByName(name);
-        if (nameClash.isPresent() && !nameClash.get().getId().equals(id)) {
+        // OK if the matching row IS this one (user saved without changing the name).
+        Optional<Category> clash = categoryRepository.findByName(name);
+        if (clash.isPresent() && !clash.get().getId().equals(id)) {
             throw new BadRequestException("A category named \"" + name + "\" already exists");
         }
 
@@ -58,6 +58,7 @@ public class CategoryService {
         return toResponse(categoryRepository.save(category));
     }
 
+    /** Refuses to delete if any books reference the category. Returns 409 with the count. */
     @Transactional
     public void delete(Long id) {
         Category category = categoryRepository.findById(id)
@@ -73,8 +74,9 @@ public class CategoryService {
         categoryRepository.deleteById(id);
     }
 
+    /** 4-arg DTO ctor — populates bookCount. BookService uses the 3-arg ctor instead (avoids N+1). */
     private CategoryResponseDTO toResponse(Category category) {
-        long count = bookRepository.countByCategory(category);
-        return new CategoryResponseDTO(category.getId(), category.getName(), category.getDescription(), count);
+        return new CategoryResponseDTO(category.getId(), category.getName(),
+                category.getDescription(), bookRepository.countByCategory(category));
     }
 }

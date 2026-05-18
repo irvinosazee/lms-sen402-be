@@ -3,6 +3,7 @@ package com.lms.entities;
 import jakarta.persistence.*;
 import java.util.List;
 
+/** Book author. Many books per author (OneToMany), but the FK lives on Book. */
 @Entity
 @Table(name = "authors")
 public class Author {
@@ -17,6 +18,7 @@ public class Author {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
+    // mappedBy = "author" means Book owns the FK column; this side is read-only.
     @OneToMany(mappedBy = "author")
     private List<Book> books;
 

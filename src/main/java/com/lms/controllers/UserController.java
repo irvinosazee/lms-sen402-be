@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/** Staff-only user directory. Class-level @PreAuthorize applies to every endpoint. */
 @RestController
 @RequestMapping("/api/v1/users")
 @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -22,6 +23,7 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
+    /** Listing's simple enough that it stays in the controller — no UserService needed yet. */
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         List<UserResponseDTO> users = userRepository.findAll().stream()
